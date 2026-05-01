@@ -1,36 +1,93 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🚀 Resumify — AI Resume Builder & Job Preparation Platform
 
-## Getting Started
+🔗 Live App: https://resumify-project.vercel.app
 
-First, run the development server:
+Resumify is a modern AI-powered resume builder and job preparation platform that helps users create, analyze, and optimize resumes using intelligent tools like ATS scoring, job matching, and cover letter generation.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ✨ Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 📝 Resume Builder
+- Create and manage resumes with multiple sections
+- Modern templates with live preview
+- Save, update, and delete resumes
+- Upload existing resume (PDF) → auto-parse into structured data
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+### 🤖 AI-Powered Tools
+- **ATS Score Checker**
+  - Analyze resume against job description
+  - Get score, missing keywords, and suggestions
 
-To learn more about Next.js, take a look at the following resources:
+- **Job Description Matching**
+  - Match resume with job requirements
+  - Identify strengths and gaps
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Cover Letter Generator**
+  - Generate tailored cover letters using AI
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+### 📊 AI Reports System
+- Save AI analysis as reusable reports
+- View past ATS checks, job matches, and cover letters
+- Upload external resumes for analysis
+- PDF preview + AI insights in one workspace
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 💳 Credit-Based System
+- Users get limited credits based on subscription plan:
+  - FREE → 2 credits
+  - RECOMMENDED → 10 credits
+  - ENTERPRISE → 100 credits
+- Credits are consumed for:
+  - Resume creation
+  - Resume upload
+  - AI operations
+- Safe atomic credit deduction logic (race-condition resistant)
+
+---
+
+### 🔐 Authentication & Security
+- JWT-based authentication
+- Protected routes and API guards
+- Subscription-based feature access
+
+---
+
+## 🧠 Tech Stack
+
+### Frontend
+- Next.js (App Router)
+- React
+- TypeScript
+- Tailwind CSS
+- Shadcn UI
+
+### Backend
+- Next.js API Routes
+- Drizzle ORM
+- PostgreSQL (Neon)
+
+### AI Integration
+- Groq / Gemini APIs
+- Custom prompt engineering for ATS & matching
+
+### File Handling
+- UploadThing (PDF uploads)
+- PDF parsing using `unpdf`
+
+---
+
+## ⚙️ Architecture Highlights
+
+- Separation of:
+  - Resume Builder (structured data)
+  - AI Reports (analysis snapshots)
+
+- Atomic credit system using SQL conditions:
+```sql
+credits = credits - 1 WHERE credits > 0
