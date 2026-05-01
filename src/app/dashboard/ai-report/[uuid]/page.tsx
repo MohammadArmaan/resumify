@@ -27,9 +27,11 @@ import {
     TrendingDown,
     Sparkles,
     Lock,
+    ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/hooks/queries/useUser";
+import Link from "next/link";
 
 // ── Score Ring ────────────────────────────────────────────────────────────────
 function ScoreRing({ score, color }: { score: number; color: string }) {
@@ -413,6 +415,16 @@ export default function AiReportPage() {
              */}
             <div className="w-full">
                 {/* Outer container: full viewport height on desktop, natural height on mobile */}
+                <div className="flex items-center justify-between">
+                <Link
+                    href="/dashboard"
+                    className="inline-flex items-center gap-2 p-1.5 text-muted-foreground hover:text-muted-foreground/70 hover:bg-accent rounded-lg"
+                >
+                    <ArrowLeft className="h-4 w-4" />
+                    Back to Dashboard
+                </Link>
+            </div>
+            
                 <div
                     className="
                         flex flex-col gap-4

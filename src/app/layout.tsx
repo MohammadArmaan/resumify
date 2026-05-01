@@ -34,7 +34,7 @@ export const metadata: Metadata = {
         title: "Resumify - Create Your Resume in Minutes",
         description:
             "Build professional resumes with AI. Fast, modern, and ATS-friendly.",
-        url: "https://yourdomain.com", // 🔁 replace
+        url: process.env.NEXT_PUBLIC_DOMAIN, // 🔁 replace
         siteName: "Resumify",
         images: [
             {
