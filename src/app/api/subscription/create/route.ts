@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
             existingSubscription.status === "ACTIVE" &&
             new Date(existingSubscription.endDate) > new Date()
         ) {
-            amount = calculateUpgradeAmount(existingSubscription, plan, pricing);
+            amount = calculateUpgradeAmount(existingSubscription, plan, pricing) * 100;
         } else {
             amount = PRICING[plan][pricing] * 100; // paise
         }

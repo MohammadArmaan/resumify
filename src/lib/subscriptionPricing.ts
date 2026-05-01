@@ -8,7 +8,7 @@ type Subscription = {
 
 export const PRICING: Record<PlanType, Record<PricingType, number>> = {
     MONTHLY: {
-        RECOMMENDED: 100,
+        RECOMMENDED: 10,
         ENTERPRISE: 500,
     },
     YEARLY: {
