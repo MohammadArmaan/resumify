@@ -53,7 +53,7 @@ if (existingUser.length === 0) {
         .values({
             email,
             fullName,
-            profilePhoto: user.profilePhoto ?? profilePhoto,
+            profilePhoto,
             googleId,
             emailVerified: true,
         })
