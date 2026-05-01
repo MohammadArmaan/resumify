@@ -1,7 +1,7 @@
 // app/api/ai/enhance-description/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { flashModel } from "@/lib/ai/gemini";
 import { estimateTokens } from "@/lib/ai/tokens";
@@ -122,13 +122,22 @@ ${text}
 
         const used = estimateTokens(text) + estimateTokens(output);
 
-        await db
+        const updated = await db
             .update(usersTable)
             .set({
-                tokensRemaining:
-                    user.tokensRemaining && user.tokensRemaining - used,
+                tokensRemaining: sql`${usersTable.tokensRemaining} - ${used}`,
             })
-            .where(eq(usersTable.id, user.id));
+            .where(
+                and(
+                    eq(usersTable.id, user.id),
+                    sql`${usersTable.tokensRemaining} >= ${used}`,
+                ),
+            )
+            .returning();
+
+        if (!updated.length) {
+            throw new Error("Insufficient tokens");
+        }
 
         return NextResponse.json({
             success: true,

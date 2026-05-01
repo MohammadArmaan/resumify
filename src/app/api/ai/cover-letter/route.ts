@@ -1,7 +1,7 @@
 // app/api/ai/cover-letter/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { proModel } from "@/lib/ai/gemini";
 import { estimateTokens } from "@/lib/ai/tokens";
@@ -54,14 +54,26 @@ Candidate Background: ${resumeSummary}
             estimateTokens(resumeSummary) +
             estimateTokens(output);
 
-        await db
+        const updated = await db
             .update(usersTable)
             .set({
-                tokensRemaining:
-                    user.tokensRemaining && user.tokensRemaining - used,
+                tokensRemaining: sql`${usersTable.tokensRemaining} - ${used}`,
                 coverLetterGenerations: sql`${usersTable.coverLetterGenerations} - 1`,
             })
-            .where(eq(usersTable.id, user.id));
+            .where(
+                and(
+                    eq(usersTable.id, user.id),
+                    sql`${usersTable.tokensRemaining} >= ${used}`,
+                    sql`${usersTable.coverLetterGenerations} > 0`,
+                ),
+            )
+            .returning();
+
+        if (!updated.length) {
+            throw new Error(
+                "Insufficient tokens or cover letter limit reached",
+            );
+        }
 
         return NextResponse.json({
             success: true,
@@ -69,7 +81,7 @@ Candidate Background: ${resumeSummary}
             tokensUsed: used,
         });
     } catch (error) {
-        console.error(error)
+        console.error(error);
         return NextResponse.json(
             {
                 success: false,

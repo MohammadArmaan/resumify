@@ -1,7 +1,7 @@
 // app/api/ai/job-match/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { flashModel } from "@/lib/ai/gemini";
 import { estimateTokens } from "@/lib/ai/tokens";
@@ -59,14 +59,24 @@ ${jobDescription}
             estimateTokens(jobDescription) +
             estimateTokens(output);
 
-        await db
+        const updated = await db
             .update(usersTable)
             .set({
-                tokensRemaining:
-                    user.tokensRemaining && user.tokensRemaining - used,
+                tokensRemaining: sql`${usersTable.tokensRemaining} - ${used}`,
                 jobDescriptionMatchings: sql`${usersTable.jobDescriptionMatchings} - 1`,
             })
-            .where(eq(usersTable.id, user.id));
+            .where(
+                and(
+                    eq(usersTable.id, user.id),
+                    sql`${usersTable.tokensRemaining} >= ${used}`,
+                    sql`${usersTable.jobDescriptionMatchings} > 0`,
+                ),
+            )
+            .returning();
+
+        if (!updated.length) {
+            throw new Error("Insufficient tokens or limit reached");
+        }
 
         return NextResponse.json({
             success: true,
@@ -74,7 +84,7 @@ ${jobDescription}
             tokensUsed: used,
         });
     } catch (error) {
-        console.error(error)
+        console.error(error);
         return NextResponse.json(
             {
                 success: false,

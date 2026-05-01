@@ -1,7 +1,7 @@
 // app/api/ai/ats-score/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { flashModel } from "@/lib/ai/gemini";
 import { estimateTokens } from "@/lib/ai/tokens";
@@ -59,14 +59,24 @@ ${jobDescription}
             estimateTokens(jobDescription) +
             estimateTokens(output);
 
-        await db
+        const updated = await db
             .update(usersTable)
             .set({
-                tokensRemaining:
-                    user.tokensRemaining && user.tokensRemaining - used,
+                tokensRemaining: sql`${usersTable.tokensRemaining} - ${used}`,
                 atsScoreChecks: sql`${usersTable.atsScoreChecks} - 1`,
             })
-            .where(eq(usersTable.id, user.id));
+            .where(
+                and(
+                    eq(usersTable.id, user.id),
+                    sql`${usersTable.tokensRemaining} >= ${used}`,
+                    sql`${usersTable.atsScoreChecks} > 0`,
+                ),
+            )
+            .returning();
+
+        if (!updated.length) {
+            throw new Error("Insufficient tokens or ATS checks exhausted");
+        }
 
         const parsed = parseAIJson(output);
 

@@ -46,8 +46,11 @@ export default function DashboardPage() {
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
     const [isUploadOpen, setIsUploadOpen] = useState(false);
-    const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null);
+    const [selectedResumeId, setSelectedResumeId] = useState<string | null>(
+        null,
+    );
     const [file, setFile] = useState<File | null>(null);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -75,10 +78,13 @@ export default function DashboardPage() {
                     router.push(`/dashboard/builder/${data.resume.uuid}`);
                 },
                 onError: (err) => {
-                    const message = err instanceof Error ? err.message : "Failed to create resume";
+                    const message =
+                        err instanceof Error
+                            ? err.message
+                            : "Failed to create resume";
                     toast.error(message);
                 },
-            }
+            },
         );
     }
 
@@ -89,54 +95,46 @@ export default function DashboardPage() {
         }
     }
 
-// replace old handleResumeUpload()
+    // replace old handleResumeUpload()
 
-function handleResumeUpload() {
-    if (!title.trim()) {
-        toast.error(
-            "Please enter resume title"
-        );
-        return;
-    }
-
-    if (!file) {
-        toast.error(
-            "Please choose a PDF file"
-        );
-        return;
-    }
-
-    uploadResume.mutate(
-        {
-            title,
-            file,
-        },
-        {
-            onSuccess: (data) => {
-                toast.success(
-                    "Resume uploaded successfully!"
-                );
-
-                setIsUploadOpen(false);
-                setTitle("");
-                setFile(null);
-
-                router.push(
-                    `/dashboard/builder/${data.resume.uuid}`
-                );
-            },
-
-            onError: (err) => {
-                const message =
-                    err instanceof Error
-                        ? err.message
-                        : "Failed to upload resume";
-
-                toast.error(message);
-            },
+    function handleResumeUpload() {
+        if (!title.trim()) {
+            toast.error("Please enter resume title");
+            return;
         }
-    );
-}
+
+        if (!file) {
+            toast.error("Please choose a PDF file");
+            return;
+        }
+
+        uploadResume.mutate(
+            {
+                title,
+                file,
+            },
+            {
+                onSuccess: (data) => {
+                    toast.success("Resume uploaded successfully!");
+
+                    setIsUploadOpen(false);
+                    setTitle("");
+                    setFile(null);
+
+                    router.push(`/dashboard/builder/${data.resume.uuid}`);
+                },
+
+                onError: (err) => {
+                    const message =
+                        err instanceof Error
+                            ? err.message
+                            : "Failed to upload resume";
+
+                    toast.error(message);
+                },
+            },
+        );
+    }
 
     function handleUpdateResumeTitle() {
         if (!selectedResumeId) return;
@@ -151,10 +149,13 @@ function handleResumeUpload() {
                     setSelectedResumeId(null);
                 },
                 onError: (err) => {
-                    const message = err instanceof Error ? err.message : "Failed to update resume title";
+                    const message =
+                        err instanceof Error
+                            ? err.message
+                            : "Failed to update resume title";
                     toast.error(message);
                 },
-            }
+            },
         );
     }
 
@@ -170,31 +171,28 @@ function handleResumeUpload() {
                     setSelectedResumeId(null);
                 },
                 onError: (err) => {
-                    const message = err instanceof Error ? err.message : "Failed to delete resume";
+                    const message =
+                        err instanceof Error
+                            ? err.message
+                            : "Failed to delete resume";
                     toast.error(message);
                 },
-            }
+            },
         );
     }
 
     function handleUploadButtonClick() {
         if (!isSubscribed) {
-            toast.warning("Upgrade to Pro to upload existing resumes!", {
-                description: "Subscribe to unlock this feature and more.",
-                action: {
-                    label: "Buy Subscription",
-                    onClick: () => router.push("/pricing"),
-                },
-            });
+            setIsUpgradeOpen(true); // 🔥 open modal instead of toast
             return;
+        } else {
+            setIsUploadOpen(true);
         }
-        setIsUploadOpen(true);
     }
 
     return (
         <main className="min-h-screen container">
             <div className="flex gap-3">
-
                 {/* Create Resume Dialog */}
                 <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                     <DialogTrigger asChild>
@@ -233,7 +231,45 @@ function handleResumeUpload() {
                                 className="flex-1"
                                 disabled={createResume.isPending}
                             >
-                                {createResume.isPending ? "Creating..." : "Create Resume"}
+                                {createResume.isPending
+                                    ? "Creating..."
+                                    : "Create Resume"}
+                            </Button>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+
+                <button
+                    className="p-5 flex items-center justify-center flex-col gap-2 bg-linear-to-br from-purple-100 rounded-xl delay-300 to-purple-400 text-white border border-purple-700 shadow-md hover:shadow-2xl hover:border-dashed"
+                    onClick={handleUploadButtonClick}
+                    disabled={uploadResume.isPending}
+                >
+                    <UploadCloud className="bg-linear-to-br from-purple-300 to-purple-600 text-white transition-all rounded-xl p-1" />
+                    {!uploadResume.isPending
+                        ? "Upload Existing"
+                        : "Uploading..."}
+                </button>
+
+                <Dialog open={isUpgradeOpen} onOpenChange={setIsUpgradeOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Upgrade Required</DialogTitle>
+                            <DialogDescription>
+                                Uploading resumes is a premium feature. Upgrade
+                                your plan to continue.
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="flex gap-2 w-full">
+                            <DialogClose asChild className="flex-1">
+                                <Button variant="outline">Cancel</Button>
+                            </DialogClose>
+
+                            <Button
+                                className="flex-1"
+                                onClick={() => router.push("/pricing")}
+                            >
+                                Upgrade Now
                             </Button>
                         </div>
                     </DialogContent>
@@ -241,16 +277,6 @@ function handleResumeUpload() {
 
                 {/* Upload Resume — gated behind subscription */}
                 <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-                    <DialogTrigger asChild>
-                        <button
-                            className="p-5 flex items-center justify-center flex-col gap-2 bg-linear-to-br from-purple-100 rounded-xl delay-300 to-purple-400 text-white border border-purple-700 shadow-md hover:shadow-2xl hover:border-dashed"
-                            onClick={handleUploadButtonClick}
-                            disabled={uploadResume.isPending}
-                        >
-                            <UploadCloud className="bg-linear-to-br from-purple-300 to-purple-600 text-white transition-all rounded-xl p-1" />
-                            {!uploadResume.isPending ?  "Upload Existing" : "Uploading..."}
-                        </button>
-                    </DialogTrigger>
                     <DialogContent>
                         <DialogHeader>
                             <DialogTitle className="mx-auto font-bold text-xl">
@@ -262,7 +288,9 @@ function handleResumeUpload() {
                             </DialogDescription>
                         </DialogHeader>
                         <FieldGroup>
-                            <Label htmlFor="upload-resume-title">Resume Title</Label>
+                            <Label htmlFor="upload-resume-title">
+                                Resume Title
+                            </Label>
                             <Input
                                 type="text"
                                 id="upload-resume-title"
@@ -317,7 +345,9 @@ function handleResumeUpload() {
                                 background: `linear-gradient(135deg, ${baseColor}10, ${baseColor}40)`,
                                 borderColor: baseColor + "40",
                             }}
-                            onClick={() => router.push(`/dashboard/builder/${resume.uuid}`)}
+                            onClick={() =>
+                                router.push(`/dashboard/builder/${resume.uuid}`)
+                            }
                         >
                             <FilePenIcon
                                 className="size-7 group-hover:scale-105 transition-all"
@@ -334,7 +364,9 @@ function handleResumeUpload() {
                                 style={{ color: baseColor + "90" }}
                             >
                                 Updated on{" "}
-                                {new Date(resume.updatedAt).toLocaleDateString()}
+                                {new Date(
+                                    resume.updatedAt,
+                                ).toLocaleDateString()}
                             </p>
                             <div className="absolute top-1 right-1 group-hover:flex items-center hidden">
                                 <button
@@ -371,7 +403,9 @@ function handleResumeUpload() {
                         </DialogTitle>
                     </DialogHeader>
                     <FieldGroup>
-                        <Label htmlFor="edit-resume-title">Edit Resume Title</Label>
+                        <Label htmlFor="edit-resume-title">
+                            Edit Resume Title
+                        </Label>
                         <Input
                             id="edit-resume-title"
                             placeholder="Edit Resume Title"
@@ -389,7 +423,9 @@ function handleResumeUpload() {
                             className="flex-1"
                             disabled={updateResumeTitle.isPending}
                         >
-                            {updateResumeTitle.isPending ? "Saving..." : "Edit Resume Title"}
+                            {updateResumeTitle.isPending
+                                ? "Saving..."
+                                : "Edit Resume Title"}
                         </Button>
                     </div>
                 </DialogContent>

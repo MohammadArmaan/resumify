@@ -37,10 +37,10 @@ export type ProjectData = {
 };
 
 export type ResumeTemplate =
+    | "classic"
     | "modern"
     | "minimal"
     | "minimal-image"
-    | "classic"
     | "premium"
     | "executive";
 
@@ -57,7 +57,7 @@ export type ResumeData = {
         image?: string | File;
     };
     id: number;
-    uuid: string
+    uuid: string;
     userId: string;
     title: string;
     public: boolean;
