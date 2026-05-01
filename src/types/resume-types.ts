@@ -7,7 +7,7 @@ export type PersonalInfoData = {
     github?: string;
     website?: string;
     profession?: string;
-    image?: string;
+    image?: string | File;
 };
 
 export type ExperienceData = {
@@ -54,7 +54,7 @@ export type ResumeData = {
         github?: string;
         website?: string;
         profession?: string;
-        image?: string;
+        image?: string | File;
     };
     id: number;
     uuid: string

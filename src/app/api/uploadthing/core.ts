@@ -10,7 +10,7 @@ export const ourFileRouter = {
         },
     })
         .middleware(async () => {
-            return {}; // ✅ no auth here
+            return {};
         })
         .onUploadComplete(async ({ file }) => {
             return {
@@ -25,7 +25,7 @@ export const ourFileRouter = {
         },
     })
         .middleware(async () => {
-            return {}; // ✅ FIXED
+            return {};
         })
         .onUploadComplete(async ({ file }) => {
             return {
@@ -34,3 +34,6 @@ export const ourFileRouter = {
             };
         }),
 } satisfies FileRouter;
+
+// ✅ ADD THIS
+export type OurFileRouter = typeof ourFileRouter;

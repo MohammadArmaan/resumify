@@ -723,14 +723,14 @@ export default function AiReportPage() {
                                             </div>
 
                                             {/* Suggestions */}
-                                            {jobMatch.data.data.suggestions
+                                            {jobMatch.data.data.suggestions && jobMatch.data.data.suggestions
                                                 ?.length > 0 && (
                                                 <div className="space-y-0 border-t border-border pt-4">
                                                     <p className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1.5 uppercase tracking-wide mb-2">
                                                         <Lightbulb className="w-3 h-3 text-amber-500" />
                                                         Suggestions
                                                     </p>
-                                                    {jobMatch.data.data.suggestions.map(
+                                                    {jobMatch.data.data.suggestions && jobMatch.data.data.suggestions.map(
                                                         (
                                                             s: string,
                                                             i: number,

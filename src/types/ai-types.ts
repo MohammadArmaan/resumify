@@ -42,6 +42,7 @@ export type JobMatchResult = {
     matchScore: number;
     strengths: string[];
     gaps: string[];
+    suggestions?: string[];
 };
 
 export type JobMatchResponse = {
