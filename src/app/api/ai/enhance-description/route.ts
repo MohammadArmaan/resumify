@@ -108,7 +108,7 @@ GLOBAL RULES
 - Return ONLY final rewritten text
 - No labels
 - No explanation
-- No bullet points
+- No bullet points only if user inputs for bullet points or points
 
 ========================
 USER INPUT
