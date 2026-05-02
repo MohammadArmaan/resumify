@@ -74,26 +74,27 @@ REWRITE RULES
 ========================
 
 FOR PROFESSIONAL SUMMARY:
-- 2 to 3 lines maximum
+- 2 to 3 lines maximum. Only if user specifies add more content
 - Strong personal brand tone
 - Mention core technologies / strengths
 - Career-oriented and recruiter-friendly
 - No first person language
+- Paragraph format only. Only if user specifies you can make bullet points aswell
 
 FOR WORK EXPERIENCE:
+- 2 to 3 lines maximum. Only if user specifies add more content
 - Start with strong action verbs
 - Show ownership + impact
 - Include measurable outcomes if given
-- 2 to 3 lines maximum
-- Paragraph format only
+- Paragraph format only. Only if user specifies you can make bullet points aswell
 
 FOR PROJECT DESCRIPTION:
 - Mention what was built
 - Mention technologies if present
 - Mention features / impact
 - Strong engineering tone
-- 2 to 3 lines maximum
-- Paragraph format only
+- 2 to 3 lines maximum. Only if user specifies add more content
+- Paragraph format only. Only if user specifies you can make bullet points aswell
 
 ========================
 GLOBAL RULES
@@ -109,6 +110,7 @@ GLOBAL RULES
 - No labels
 - No explanation
 - No bullet points only if user inputs for bullet points or points
+- You are directly chatting with user so please dont add template languages or suggestions like like **Rewritten Text**, PROJECT DESCRIPTION, etc
 
 ========================
 USER INPUT
@@ -119,6 +121,32 @@ ${text}
 
         const result = await flashModel.generateContent(prompt);
         const output = result.response.text().trim();
+        const enhancedText = output
+            .replace(
+                "Based on the detection rules, I would classify the user's input as a PROFESSIONAL SUMMARY.",
+                "",
+            )
+            .replace(
+                "Based on the detection rules, I would classify the user's input as a PROJECT DESCRIPTION.",
+                "",
+            )
+            .replace(
+                "Based on the detection rules, I would classify the user's input as a WORK EXPERIENCE.",
+                "",
+            )
+            .replace("I would categorize this as a PROJECT DESCRIPTION.", "")
+            .replace("I would categorize this as a PROFESSIONAL SUMMARY.", "")
+            .replace("I would categorize this as a WORK EXPERIENCE.", "")
+            .replace("PROJECT SUMMARY:", "")
+            .replace(" PROJECT DESCRIPTION:", "")
+            .replace("WORK EXPERIENCE:", "")
+            .replace("Project Description", "")
+            .replace("Work Experience", "")
+            .replace("Professional Summary", "")
+            .replace("**rewritten text**", "")
+            .replace("Here's the rewritten text:", "")
+            .replace("Rewritten Text:", "")
+            .replace("rewritten text:", "");
 
         const used = estimateTokens(text) + estimateTokens(output);
 
@@ -141,7 +169,7 @@ ${text}
 
         return NextResponse.json({
             success: true,
-            enhancedText: output,
+            enhancedText,
             tokensUsed: used,
         });
     } catch (error) {
