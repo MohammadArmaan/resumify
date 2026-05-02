@@ -6,6 +6,13 @@ import { desc, eq } from "drizzle-orm";
 import { getUserFromRequest } from "@/lib/jwt";
 import { PLAN_LIMITS } from "@/lib/subscriptionPricing";
 
+function getCurrentCycleStart(startDate: Date, now: Date): Date {
+    const msIn30Days = 30 * 24 * 60 * 60 * 1000;
+    const elapsed = now.getTime() - startDate.getTime();
+    const cyclesPassed = Math.floor(elapsed / msIn30Days);
+    return new Date(startDate.getTime() + cyclesPassed * msIn30Days);
+}
+
 export async function GET(req: NextRequest) {
     try {
         /* -------- AUTH -------- */
@@ -20,7 +27,13 @@ export async function GET(req: NextRequest) {
 
         const userId = user[0].id;
 
-        /* -------- FETCH LATEST SUB -------- */
+        /* -------- FETCH USER + LATEST SUB -------- */
+        const [currentUser] = await db
+            .select()
+            .from(usersTable)
+            .where(eq(usersTable.id, userId))
+            .limit(1);
+
         const [subscription] = await db
             .select()
             .from(subscriptionTable)
@@ -30,7 +43,6 @@ export async function GET(req: NextRequest) {
 
         /* -------- NO SUB -------- */
         if (!subscription) {
-            // ensure user is reset
             await db
                 .update(usersTable)
                 .set({
@@ -40,6 +52,7 @@ export async function GET(req: NextRequest) {
                     jobDescriptionMatchings: 0,
                     coverLetterGenerations: 0,
                     tokensRemaining: 0,
+                    updatedAt: new Date(),
                 })
                 .where(eq(usersTable.id, userId));
 
@@ -52,7 +65,6 @@ export async function GET(req: NextRequest) {
         }
 
         const now = new Date();
-
         const isActive =
             subscription.status === "ACTIVE" &&
             new Date(subscription.endDate) > now;
@@ -61,34 +73,57 @@ export async function GET(req: NextRequest) {
         if (isActive) {
             const limits = PLAN_LIMITS[subscription.pricing];
 
-            // Sync user limits (important if user refreshed / new login)
-            await db
-                .update(usersTable)
-                .set({
-                    isSubscribed: true,
-                    credits: limits.credits,
-                    atsScoreChecks: limits.ats,
-                    jobDescriptionMatchings: limits.jd,
-                    coverLetterGenerations: limits.coverLetter,
-                    tokensRemaining: limits.tokens,
-                })
-                .where(eq(usersTable.id, userId));
+            // Calculate current 30-day cycle start from subscription startDate
+            const currentCycleStart = getCurrentCycleStart(
+                new Date(subscription.startDate),
+                now,
+            );
+
+            // updatedAt tells us when credits were last reset
+            const lastReset = currentUser.updatedAt
+                ? new Date(currentUser.updatedAt)
+                : null;
+
+            // Only reset if updatedAt is before the current cycle started
+            // meaning credits haven't been refreshed yet this cycle
+            const shouldReset =
+                !lastReset || lastReset < currentCycleStart;
+
+            if (shouldReset) {
+                await db
+                    .update(usersTable)
+                    .set({
+                        isSubscribed: true,
+                        credits: limits.credits,
+                        atsScoreChecks: limits.ats,
+                        jobDescriptionMatchings: limits.jd,
+                        coverLetterGenerations: limits.coverLetter,
+                        tokensRemaining: limits.tokens,
+                        updatedAt: now, // <-- marks when this cycle's reset happened
+                    })
+                    .where(eq(usersTable.id, userId));
+            } else {
+                // Don't touch credits — just ensure isSubscribed flag is correct
+                await db
+                    .update(usersTable)
+                    .set({ isSubscribed: true })
+                    .where(eq(usersTable.id, userId));
+            }
 
             return NextResponse.json({
                 isSubscribed: true,
                 plan: subscription.plan,
                 pricing: subscription.pricing,
                 expiry: subscription.endDate,
-                credits: limits.credits,
-                atsScoreChecks: limits.ats,
-                jobDescriptionMatchings: limits.jd,
-                coverLetterGenerations: limits.coverLetter,
-                tokensRemainig: limits.tokens,
+                credits: shouldReset ? limits.credits : currentUser.credits,
+                atsScoreChecks: shouldReset ? limits.ats : currentUser.atsScoreChecks,
+                jobDescriptionMatchings: shouldReset ? limits.jd : currentUser.jobDescriptionMatchings,
+                coverLetterGenerations: shouldReset ? limits.coverLetter : currentUser.coverLetterGenerations,
+                tokensRemaining: shouldReset ? limits.tokens : currentUser.tokensRemaining,
             });
         }
 
         /* -------- HANDLE EXPIRED -------- */
-        // update subscription status if needed
         if (subscription.status === "ACTIVE") {
             await db
                 .update(subscriptionTable)
@@ -96,7 +131,6 @@ export async function GET(req: NextRequest) {
                 .where(eq(subscriptionTable.id, subscription.id));
         }
 
-        // reset user
         await db
             .update(usersTable)
             .set({
@@ -106,6 +140,7 @@ export async function GET(req: NextRequest) {
                 jobDescriptionMatchings: 0,
                 coverLetterGenerations: 0,
                 tokensRemaining: 0,
+                updatedAt: now,
             })
             .where(eq(usersTable.id, userId));
 
@@ -115,9 +150,9 @@ export async function GET(req: NextRequest) {
             pricing: null,
             expiry: subscription.endDate,
         });
+
     } catch (err) {
         console.error("Subscription status error:", err);
-
         return NextResponse.json(
             { error: "Internal server error" },
             { status: 500 },
