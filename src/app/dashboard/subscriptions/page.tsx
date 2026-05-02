@@ -11,6 +11,10 @@ import { PRICING, PLAN_LIMITS } from "@/lib/subscriptionPricing";
 import { useRazorpay } from "@/hooks/useRazorpay";
 import { toast } from "sonner";
 
+// ─── Discount Badge Config (change value here) ────────────────────────────────
+
+const YEARLY_DISCOUNT_BADGE = "90% OFF";
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type PlanName = "Free" | "Recommended" | "Enterprise";
@@ -19,7 +23,6 @@ type PricingTier = "RECOMMENDED" | "ENTERPRISE";
 
 interface PlanMeta {
     name: PlanName;
-    /** Maps to subscriptionPricing keys – null for Free */
     pricingKey: PricingTier | null;
     mostPopular?: boolean;
     features: { text: string; available: boolean }[];
@@ -48,28 +51,13 @@ const PLAN_META: PlanMeta[] = [
         pricingKey: "RECOMMENDED",
         mostPopular: true,
         features: [
-            {
-                text: `${PLAN_LIMITS.RECOMMENDED.credits} Resume Credits`,
-                available: true,
-            },
+            { text: `${PLAN_LIMITS.RECOMMENDED.credits} Resume Credits`, available: true },
             { text: "AI Resume Assistance", available: true },
             { text: "Resume Upload & Parsing", available: true },
-            {
-                text: `Token Usage (${PLAN_LIMITS.RECOMMENDED.tokens.toLocaleString()}/month)`,
-                available: true,
-            },
-            {
-                text: `ATS Score Analysis (${PLAN_LIMITS.RECOMMENDED.ats} uses/month)`,
-                available: true,
-            },
-            {
-                text: `Job Description Matching (${PLAN_LIMITS.RECOMMENDED.jd} uses/month)`,
-                available: true,
-            },
-            {
-                text: `AI Cover Letter (${PLAN_LIMITS.RECOMMENDED.coverLetter} uses/month)`,
-                available: true,
-            },
+            { text: `Token Usage (${PLAN_LIMITS.RECOMMENDED.tokens.toLocaleString()}/month)`, available: true },
+            { text: `ATS Score Analysis (${PLAN_LIMITS.RECOMMENDED.ats} uses/month)`, available: true },
+            { text: `Job Description Matching (${PLAN_LIMITS.RECOMMENDED.jd} uses/month)`, available: true },
+            { text: `AI Cover Letter (${PLAN_LIMITS.RECOMMENDED.coverLetter} uses/month)`, available: true },
             { text: "Up to 5 Resume Templates", available: true },
             { text: "Basic Support", available: true },
         ],
@@ -78,28 +66,13 @@ const PLAN_META: PlanMeta[] = [
         name: "Enterprise",
         pricingKey: "ENTERPRISE",
         features: [
-            {
-                text: `${PLAN_LIMITS.ENTERPRISE.credits} Resume Credits`,
-                available: true,
-            },
+            { text: `${PLAN_LIMITS.ENTERPRISE.credits} Resume Credits`, available: true },
             { text: "Unlimited AI Assistance", available: true },
             { text: "Advanced Resume Parsing", available: true },
-            {
-                text: `Token Usage (${PLAN_LIMITS.ENTERPRISE.tokens.toLocaleString()}/month)`,
-                available: true,
-            },
-            {
-                text: `ATS Score Analysis (${PLAN_LIMITS.ENTERPRISE.ats} uses/month)`,
-                available: true,
-            },
-            {
-                text: `Job Description Matching (${PLAN_LIMITS.ENTERPRISE.jd} uses/month)`,
-                available: true,
-            },
-            {
-                text: `AI Cover Letter (${PLAN_LIMITS.ENTERPRISE.coverLetter} uses/month)`,
-                available: true,
-            },
+            { text: `Token Usage (${PLAN_LIMITS.ENTERPRISE.tokens.toLocaleString()}/month)`, available: true },
+            { text: `ATS Score Analysis (${PLAN_LIMITS.ENTERPRISE.ats} uses/month)`, available: true },
+            { text: `Job Description Matching (${PLAN_LIMITS.ENTERPRISE.jd} uses/month)`, available: true },
+            { text: `AI Cover Letter (${PLAN_LIMITS.ENTERPRISE.coverLetter} uses/month)`, available: true },
             { text: "Premium Resume Templates", available: true },
             { text: "Priority Support", available: true },
         ],
@@ -114,15 +87,10 @@ const PLAN_ORDER: Record<PlanName, number> = {
     Enterprise: 2,
 };
 
-/** Returns the base price (in ₹, not paise) for a given plan + cycle. */
 function basePrice(pricingKey: PricingTier, billing: BillingCycle): number {
     return PRICING[billing][pricingKey];
 }
 
-/**
- * How much the user actually pays to move to `targetKey` on `targetBilling`.
- * Mirrors the server-side `calculateUpgradeAmount` but works in ₹ (no paise).
- */
 function upgradePrice(
     currentPricingKey: PricingTier | null,
     currentBilling: BillingCycle | null,
@@ -134,7 +102,6 @@ function upgradePrice(
 
     const current = PRICING[currentBilling][currentPricingKey];
 
-    // Yearly → Monthly same tier: treat as downgrade, not free upgrade
     if (currentBilling === "YEARLY" && targetBilling === "MONTHLY" && targetKey === currentPricingKey) {
         return 0;
     }
@@ -147,7 +114,7 @@ function upgradePrice(
 export default function SubscriptionPage() {
     const [isYearly, setIsYearly] = useState(false);
     const router = useRouter();
-    const razorpayLoaded = useRazorpay(); // ← add this
+    const razorpayLoaded = useRazorpay();
 
     const { data: user } = useUser();
     const createSubscriptionMutation = useCreateSubscription();
@@ -156,13 +123,9 @@ export default function SubscriptionPage() {
 
     const billing: BillingCycle = isYearly ? "YEARLY" : "MONTHLY";
 
-    // What the user currently has (server shape: plan="MONTHLY"|"YEARLY", pricing="RECOMMENDED"|"ENTERPRISE")
-    const currentPricingKey = (subscriptionStatus?.pricing ??
-        null) as PricingTier | null;
-    const currentBilling = (subscriptionStatus?.plan ??
-        null) as BillingCycle | null;
+    const currentPricingKey = (subscriptionStatus?.pricing ?? null) as PricingTier | null;
+    const currentBilling = (subscriptionStatus?.plan ?? null) as BillingCycle | null;
 
-    // Derive the display plan name for "Current Plan" badge
     const currentPlanName: PlanName =
         currentPricingKey === "ENTERPRISE"
             ? "Enterprise"
@@ -182,7 +145,7 @@ export default function SubscriptionPage() {
         if (!razorpayLoaded) {
             console.error("Razorpay not loaded yet");
             return;
-        } // ← guard
+        }
 
         const amountInRupees = upgradePrice(
             currentPricingKey,
@@ -201,7 +164,7 @@ export default function SubscriptionPage() {
 
         const options = {
             key: process.env.NEXT_PUBLIC_RAZORPAY_KEY,
-            amount: order.amount * 100, // For Paise
+            amount: order.amount * 100,
             currency: order.currency,
             name: "Resumify",
             description: `${meta.name} Plan – ${billing.charAt(0) + billing.slice(1).toLowerCase()}`,
@@ -219,7 +182,7 @@ export default function SubscriptionPage() {
                     razorpay_payment_id: response.razorpay_payment_id,
                     razorpay_signature: response.razorpay_signature,
                 });
-                toast.success("Payment Completed Successfully!")
+                toast.success("Payment Completed Successfully!");
                 router.push("/dashboard");
             },
 
@@ -234,7 +197,7 @@ export default function SubscriptionPage() {
             },
         };
 
-        const rzp = new (window as any).Razorpay(options); // ← now safe, script is loaded
+        const rzp = new (window as any).Razorpay(options);
         rzp.open();
     };
 
@@ -260,41 +223,38 @@ export default function SubscriptionPage() {
                 />
                 <button
                     onClick={() => setIsYearly(false)}
-                    className={`relative bg-background z-10 flex-1 py-2.5 cursor-pointer rounded-full text-sm font-medium text-center transition-colors duration-300
+                    className={`relative bg-background z-10 flex-1 py-2.5 cursor-pointer rounded-full text-sm font-medium text-center flex items-center justify-center gap-1 transition-colors duration-300
                     ${!isYearly ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
                 >
                     Monthly
+                    {/* <span className="text-xs bg-green-500 text-white font-bold px-1.5 py-0.5 rounded-full leading-tight">
+                        {YEARLY_DISCOUNT_BADGE}
+                    </span> */}
                 </button>
                 <button
                     onClick={() => setIsYearly(true)}
                     className={`relative z-10 flex-1 py-2.5 cursor-pointer rounded-full text-sm font-medium text-center flex items-center justify-center gap-1 transition-colors duration-300
                     ${isYearly ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
                 >
-                    Yearly
-                    <span className="text-xs">Save more</span>
+                    Yearly Save More
+                    {/* <span className="text-xs bg-green-500 text-white font-bold px-1.5 py-0.5 rounded-full leading-tight">
+                        {YEARLY_DISCOUNT_BADGE}
+                    </span> */}
                 </button>
             </div>
 
             {/* Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl w-full items-end">
                 {PLAN_META.map((meta) => {
-                    // ── Price to display ──────────────────────────────────────
                     const displayPrice = meta.pricingKey
-                        ? upgradePrice(
-                              currentPricingKey,
-                              currentBilling,
-                              meta.pricingKey,
-                              billing,
-                          )
+                        ? upgradePrice(currentPricingKey, currentBilling, meta.pricingKey, billing)
                         : 0;
 
                     const fullPrice = meta.pricingKey
                         ? basePrice(meta.pricingKey, billing)
                         : 0;
-                    const isUpgrade =
-                        displayPrice < fullPrice && displayPrice > 0;
+                    const isUpgrade = displayPrice < fullPrice && displayPrice > 0;
 
-                    // ── Button state ──────────────────────────────────────────
                     const isCurrentPlan =
                         meta.name === currentPlanName &&
                         currentBilling === billing;
@@ -304,7 +264,6 @@ export default function SubscriptionPage() {
                         (meta.name === currentPlanName &&
                             currentBilling === "YEARLY" &&
                             billing === "MONTHLY") ||
-                        // Higher tier monthly when already on lower tier yearly (e.g. Enterprise Monthly < Recommended Yearly in price)
                         (currentBilling === "YEARLY" &&
                             billing === "MONTHLY" &&
                             meta.pricingKey !== null &&
@@ -366,9 +325,14 @@ export default function SubscriptionPage() {
                                     <span className="text-foreground/70 text-xs">
                                         {isYearly ? "/ year" : "/ month"}
                                     </span>
+                                    {/* Always show discount badge on paid plans */}
+                                    {meta.pricingKey && (
+                                        <span className="ml-1 text-[10px] bg-green-500 text-white font-bold px-1.5 py-0.5 rounded-full leading-tight">
+                                            {YEARLY_DISCOUNT_BADGE}
+                                        </span>
+                                    )}
                                 </div>
 
-                                {/* Show original price if user gets a discount */}
                                 {isUpgrade && (
                                     <p className="text-xs text-muted-foreground line-through mb-4">
                                         was ₹{fullPrice}
@@ -397,11 +361,7 @@ export default function SubscriptionPage() {
                                                     strokeLinecap="round"
                                                     strokeLinejoin="round"
                                                 >
-                                                    <circle
-                                                        cx="12"
-                                                        cy="12"
-                                                        r="10"
-                                                    />
+                                                    <circle cx="12" cy="12" r="10" />
                                                     <path d="m9 12 2 2 4-4" />
                                                 </svg>
                                             ) : (
@@ -417,11 +377,7 @@ export default function SubscriptionPage() {
                                                     strokeLinecap="round"
                                                     strokeLinejoin="round"
                                                 >
-                                                    <circle
-                                                        cx="12"
-                                                        cy="12"
-                                                        r="10"
-                                                    />
+                                                    <circle cx="12" cy="12" r="10" />
                                                     <path d="m15 9-6 6" />
                                                     <path d="m9 9 6 6" />
                                                 </svg>
@@ -441,8 +397,7 @@ export default function SubscriptionPage() {
                                                 : "bg-linear-to-r from-primary to-green-500/70 text-white hover:opacity-95"
                                         }`}
                                 >
-                                    {createSubscriptionMutation.isPending &&
-                                    !buttonDisabled
+                                    {createSubscriptionMutation.isPending && !buttonDisabled
                                         ? "Processing…"
                                         : buttonLabel}
                                 </button>
